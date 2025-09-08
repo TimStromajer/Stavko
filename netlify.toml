@@ -1,0 +1,5 @@
+[build]
+  publish = "dist/Stavko"
+  functions = "functions"
+[functions]
+  node_bundler = "esbuild"
