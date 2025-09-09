@@ -88,27 +88,22 @@
     }
   }
 
-  async function checkRole() {
-    checkedAuth = false;
-    isAdmin = false;
-    const u = get(user);
-    if (!u) {
-      checkedAuth = true;
-      return;
-    }
-    const token = await u.getIdTokenResult();
-    isAdmin = Array.isArray(token.claims.roles) && token.claims.roles.includes('admin');
-    checkedAuth = true;
-    fetchUsers();
-  }
-
+  // Watch for user changes and set checkedAuth to true if user is null
   onMount(() => {
-    let unsubscribe = user.subscribe(async (u) => {
-      if (u) {
-        checkRole();
-      }
-    });
-    return () => unsubscribe();
+      let unsubscribe = user.subscribe(async (u) => {
+        if (u) {
+          checkedAuth = false;
+          isAdmin = false;
+          const token = await u.getIdTokenResult();
+          isAdmin = Array.isArray(token.claims.roles) && token.claims.roles.includes('admin');
+          checkedAuth = true;
+          fetchUsers();
+        } else {
+          checkedAuth = true;
+          isAdmin = false;
+        }
+      });
+      return () => unsubscribe();
   });
 </script>
 

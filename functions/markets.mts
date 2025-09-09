@@ -97,9 +97,9 @@ export const handler = async (event: any, context: Context) => {
       // remove column id from reqData
       delete reqData.id;
 
-      // Convert startDate string to Firestore Timestamp
-      if (reqData.startDate && typeof reqData.startDate === 'string') {
-        reqData.startDate = admin.firestore.Timestamp.fromDate(new Date(reqData.startDate));
+      // Convert openDate string to Firestore Timestamp
+      if (reqData.openDate && typeof reqData.openDate === 'string') {
+        reqData.openDate = admin.firestore.Timestamp.fromDate(new Date(reqData.openDate));
       }
 
       // Convert closeDate string to Firestore Timestamp

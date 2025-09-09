@@ -117,6 +117,16 @@ export const handler = async (event: any, context: Context) => {
         };
       }
 
+      // check the market is OPEN
+      const marketDoc = db.collection("Markets").doc(reqData.marketId);
+      const marketSnapshot = await marketDoc.get();
+      if (!marketSnapshot.exists) {
+        return {
+          statusCode: 404,
+          body: JSON.stringify({ error: "Market not found" })
+        };
+      }
+
       // check if action is BUY that user has enough value
       if (reqData.action === 'BUY') {
         const userValue = await getuserValue(reqData.userId);
@@ -192,6 +202,17 @@ export const handler = async (event: any, context: Context) => {
         return {
           statusCode: 404,
           body: JSON.stringify({ error: "Order not found" })
+        };
+      }
+
+      // check that the market is still open
+      const marketId = orderSnapshot.data()?.marketId;
+      const marketDoc = db.collection("Markets").doc(marketId);
+      const marketSnapshot = await marketDoc.get();
+      if (!marketSnapshot.exists) {
+        return {
+          statusCode: 404,
+          body: JSON.stringify({ error: "Market not found" })
         };
       }
 

@@ -26,6 +26,7 @@
   });
 
   function toDate(val: string | FirestoreTimestamp): Date {
+    console.log(typeof val);
     if (typeof val === 'string') {
       return new Date(val);
     }
@@ -64,7 +65,6 @@
             <h2>{market.title}</h2>
             <p><strong>Open:</strong> {toDate(market.openDate).toLocaleString()}</p>
             <p><strong>Close:</strong> {toDate(market.closeDate).toLocaleString()}</p>
-            <p><strong>ID:</strong> {market.id}</p>
           </div>
         {/each}
       </div>
@@ -88,7 +88,6 @@
             <h2>{market.title}</h2>
             <p><strong>Open:</strong> {toDate(market.openDate).toLocaleString()}</p>
             <p><strong>Close:</strong> {toDate(market.closeDate).toLocaleString()}</p>
-            <p><strong>ID:</strong> {market.id}</p>
           </div>
         {/each}
       </div>

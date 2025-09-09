@@ -65,14 +65,13 @@
 
   onMount(() => {
     let unsubscribe = user.subscribe(async (u) => {
-      if (u) {
-        loading = true;
-        error = '';
-        loginUserId = u.uid;
-        await getOrders();
-        await fetchHoldings();
-        await getUserValue();
-      }
+      loading = true;
+      error = '';
+      if (u && u.uid) loginUserId = u.uid;
+      await getOrders();
+      await fetchHoldings();
+      await getUserValue();
+      loading = false;
     });
     return () => unsubscribe();
   });
@@ -337,9 +336,9 @@
                 <td>{toDate(order.placedDate).toLocaleString()}</td>
                 <td>
                   {#if order.userId === loginUserId}
-                    <button on:click={() => cancelOrder(order.id)} title="Cancel Order" style="background: none; border: none; cursor: pointer; color: #c00; font-size: 1.2em;">✖️</button>
+                    <button disabled={!loginUserId} on:click={() => cancelOrder(order.id)} title="Cancel Order" style="background: none; border: none; cursor: pointer; color: #c00; font-size: 1.2em;">✖️</button>
                   {:else}
-                    <button on:click={() => acceptOrder(order.id)} title="Accept Order" style="background: none; border: none; cursor: pointer; color: #090; font-size: 1.2em;">✔️</button>
+                    <button disabled={!loginUserId} on:click={() => acceptOrder(order.id)} title="Accept Order" style="background: none; border: none; cursor: pointer; color: #090; font-size: 1.2em;">✔️</button>
                   {/if}
                 </td>
               </tr>
@@ -350,6 +349,7 @@
     </div>
   </div>
 
+{#if loginUserId}
   <div style="margin-top: 2rem; display: flex; gap: 1rem; align-items: center;">
     <button on:click={openOrderModal} disabled={marketStatus === 'CLOSED'}>Create order</button>
     <button on:click={() => goto(`/markets/${get(page).params.id}/confirm`)} disabled={marketStatus === 'CLOSED'}>Confirm market</button>
@@ -367,6 +367,7 @@
   <div style="margin-top: 2rem;">
     <button on:click={openSellModal} disabled={marketStatus === 'CLOSED'}>Sell Holdings</button>
   </div>
+  {/if}
 
   {#if showModal}
     <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 1000;">

@@ -5,7 +5,7 @@
   import { user, userLoading } from '$lib/stores/user';
   import { get } from 'svelte/store';
   import { PUBLIC_FUNCTIONS_URL } from "$env/static/public";
-  
+
   let title = '';
   let closeDate = '';
   let error = '';
@@ -14,26 +14,20 @@
   let isMarketManager = false;
   let checkedAuth = false;
 
-  async function checkRole() {
-    checkedAuth = false;
-    isMarketManager = false;
-    const u = get(user);
-    if (!u) {
-      checkedAuth = true;
-      return;
-    }
-    const token = await u.getIdTokenResult();
-    isMarketManager = Array.isArray(token.claims.roles) && token.claims.roles.includes('marketManager');
-    checkedAuth = true;
-  }
-
   onMount(() => {
-    let unsubscribe = user.subscribe(async (u) => {
-      if (u) {
-        checkRole();
-      }
-    });
-    return () => unsubscribe();
+      let unsubscribe = user.subscribe(async (u) => {
+        if (u) {
+          checkedAuth = false;
+          isMarketManager = false;
+          const token = await u.getIdTokenResult();
+          isMarketManager = Array.isArray(token.claims.roles) && token.claims.roles.includes('marketManager');
+          checkedAuth = true;
+        } else {
+          checkedAuth = true;
+          isMarketManager = false;
+        }
+      });
+      return () => unsubscribe();
   });
 
   async function createMarket() {
@@ -49,7 +43,7 @@
       const body = {
         title,
         closeDate: new Date(closeDate),
-        startDate: new Date(),
+        openDate: new Date(),
         status: 'OPEN'
       };
       let userObj = auth.currentUser;
