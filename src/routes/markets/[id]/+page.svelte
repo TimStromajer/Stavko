@@ -281,153 +281,1018 @@
   }
 </script>
 
-<h1>Market Orders</h1>
-
-{#if loading}
-  <p>Loading orders...</p>
-{:else if error}
-  <p style="color: red">{error}</p>
-{:else}
-  <div style="display: flex; gap: 2rem;">
-    <div style="flex: 1;">
-      <h2>YES</h2>
-      {#if yesOrders.length === 0}
-        <p>No YES buy orders.</p>
-      {:else}
-        <table style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr><th>Price</th><th>Amount</th><th>User</th><th>Date</th><th></th></tr>
-          </thead>
-          <tbody>
-            {#each yesOrders as order}
-              <tr>
-                <td>{order.price}</td>
-                <td>{order.amount}</td>
-                <td>{order.userId}</td>
-                <td>{toDate(order.placedDate).toLocaleString()}</td>
-                <td>
-                  {#if order.userId === loginUserId}
-                    <button on:click={() => cancelOrder(order.id)} title="Cancel Order" style="background: none; border: none; cursor: pointer; color: #c00; font-size: 1.2em;">✖️</button>
-                  {:else}
-                    <button on:click={() => acceptOrder(order.id)} title="Accept Order" style="background: none; border: none; cursor: pointer; color: #090; font-size: 1.2em;">✔️</button>
-                  {/if}
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      {/if}
-    </div>
-    <div style="flex: 1;">
-      <h2>NO</h2>
-      {#if noOrders.length === 0}
-        <p>No NO buy orders.</p>
-      {:else}
-        <table style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr><th>Price</th><th>Amount</th><th>User</th><th>Date</th><th></th></tr>
-          </thead>
-          <tbody>
-            {#each noOrders as order}
-              <tr>
-                <td>{order.price}</td>
-                <td>{order.amount}</td>
-                <td>{order.userId}</td>
-                <td>{toDate(order.placedDate).toLocaleString()}</td>
-                <td>
-                  {#if order.userId === loginUserId}
-                    <button disabled={!loginUserId} on:click={() => cancelOrder(order.id)} title="Cancel Order" style="background: none; border: none; cursor: pointer; color: #c00; font-size: 1.2em;">✖️</button>
-                  {:else}
-                    <button disabled={!loginUserId} on:click={() => acceptOrder(order.id)} title="Accept Order" style="background: none; border: none; cursor: pointer; color: #090; font-size: 1.2em;">✔️</button>
-                  {/if}
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      {/if}
+<div class="orders-container">
+  <div class="page-header">
+    <h1 class="page-title">Market Orders</h1>
+    <div class="market-status-indicator">
+      <div class="status-dot {marketStatus === 'CLOSED' ? 'closed' : 'active'}"></div>
+      <span class="status-text">{marketStatus === 'CLOSED' ? 'Market Closed' : 'Market Active'}</span>
     </div>
   </div>
 
-{#if loginUserId}
-  <div style="margin-top: 2rem; display: flex; gap: 1rem; align-items: center;">
-    <button on:click={openOrderModal} disabled={marketStatus === 'CLOSED'}>Create order</button>
-    <button on:click={() => goto(`/markets/${get(page).params.id}/confirm`)} disabled={marketStatus === 'CLOSED'}>Confirm market</button>
-  </div>
-
-  <div style="margin-top: 2rem;">
-    <h3>Your Holdings</h3>
-    <div style="display: flex; gap: 2rem; align-items: center;">
-      <div>User Value: {userValue}</div>
-      <div>YES: {holdingsYes}</div>
-      <div>NO: {holdingsNo}</div>
+  {#if loading}
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">Loading orders...</p>
     </div>
-  </div>
+  {:else if error}
+    <div class="error-state">
+      <svg class="error-icon" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+      </svg>
+      <p class="error-text">{error}</p>
+    </div>
+  {:else}
+    <div class="orders-grid">
+      <!-- YES Orders Section -->
+      <div class="orders-section yes-section">
+        <div class="section-header">
+          <h2 class="section-title">YES Orders</h2>
+          <div class="orders-badge yes-badge">{yesOrders.length}</div>
+        </div>
+        
+        {#if yesOrders.length === 0}
+          <div class="empty-orders">
+            <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9 12l2 2 4-4"/>
+            </svg>
+            <p class="empty-text">No YES buy orders</p>
+          </div>
+        {:else}
+          <div class="orders-table-container">
+            <table class="orders-table">
+              <thead>
+                <tr>
+                  <th>Price</th>
+                  <th>Amount</th>
+                  <th>User</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each yesOrders as order}
+                  <tr class="order-row">
+                    <td class="price-cell">{order.price}</td>
+                    <td class="amount-cell">{order.amount}</td>
+                    <td class="user-cell">{order.userId}</td>
+                    <td class="date-cell">{toDate(order.placedDate).toLocaleString()}</td>
+                    <td class="action-cell">
+                      {#if order.userId === loginUserId}
+                        <button aria-label="Cancel order" on:click={() => cancelOrder(order.id)} class="action-button cancel-button" title="Cancel Order">
+                          <svg viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                          </svg>
+                        </button>
+                      {:else}
+                        <button aria-label="Accept order" on:click={() => acceptOrder(order.id)} class="action-button accept-button" title="Accept Order">
+                          <svg viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                          </svg>
+                        </button>
+                      {/if}
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+      </div>
 
-  <div style="margin-top: 2rem;">
-    <button on:click={openSellModal} disabled={marketStatus === 'CLOSED'}>Sell Holdings</button>
-  </div>
+      <!-- NO Orders Section -->
+      <div class="orders-section no-section">
+        <div class="section-header">
+          <h2 class="section-title">NO Orders</h2>
+          <div class="orders-badge no-badge">{noOrders.length}</div>
+        </div>
+        
+        {#if noOrders.length === 0}
+          <div class="empty-orders">
+            <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M15 9l-6 6M9 9l6 6"/>
+            </svg>
+            <p class="empty-text">No NO buy orders</p>
+          </div>
+        {:else}
+          <div class="orders-table-container">
+            <table class="orders-table">
+              <thead>
+                <tr>
+                  <th>Price</th>
+                  <th>Amount</th>
+                  <th>User</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each noOrders as order}
+                  <tr class="order-row">
+                    <td class="price-cell">{order.price}</td>
+                    <td class="amount-cell">{order.amount}</td>
+                    <td class="user-cell">{order.userId}</td>
+                    <td class="date-cell">{toDate(order.placedDate).toLocaleString()}</td>
+                    <td class="action-cell">
+                      {#if order.userId === loginUserId}
+                        <button aria-label="Cancel order" disabled={!loginUserId} on:click={() => cancelOrder(order.id)} class="action-button cancel-button" title="Cancel Order">
+                          <svg viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                          </svg>
+                        </button>
+                      {:else}
+                        <button aria-label="Accept order" disabled={!loginUserId} on:click={() => acceptOrder(order.id)} class="action-button accept-button" title="Accept Order">
+                          <svg viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                          </svg>
+                        </button>
+                      {/if}
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+      </div>
+    </div>
+
+    {#if loginUserId}
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button on:click={openOrderModal} disabled={marketStatus === 'CLOSED'} class="primary-button">
+          <svg class="button-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+          </svg>
+          Create Order
+        </button>
+        <button on:click={() => goto(`/markets/${get(page).params.id}/confirm`)} disabled={marketStatus === 'CLOSED'} class="secondary-button">
+          <svg class="button-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+          </svg>
+          Confirm Market
+        </button>
+      </div>
+
+      <!-- Holdings Section -->
+      <div class="holdings-section">
+        <h3 class="holdings-title">Your Holdings</h3>
+        <div class="holdings-grid">
+          <div class="holding-card value-card">
+            <div class="holding-label">Total Value</div>
+            <div class="holding-value">{userValue}</div>
+          </div>
+          <div class="holding-card yes-card">
+            <div class="holding-label">YES Shares</div>
+            <div class="holding-value">{holdingsYes}</div>
+          </div>
+          <div class="holding-card no-card">
+            <div class="holding-label">NO Shares</div>
+            <div class="holding-value">{holdingsNo}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sell Button -->
+      <div class="sell-section">
+        <button on:click={openSellModal} disabled={marketStatus === 'CLOSED'} class="sell-button">
+          <svg class="button-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+          Sell Holdings
+        </button>
+      </div>
+    {/if}
   {/if}
 
+  <!-- Create Order Modal -->
   {#if showModal}
-    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 1000;">
-      <div style="background: white; padding: 2rem; border-radius: 8px; min-width: 320px; box-shadow: 0 2px 16px #0002;">
-        <h2>Create Order</h2>
-        <form on:submit|preventDefault={submitOrder}>
-          <div style="margin-bottom: 1rem;">
-            <label>Type:
-              <select bind:value={modalType} required>
-                <option value="YES">YES</option>
-                <option value="NO">NO</option>
-              </select>
-            </label>
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Create Order</h2>
+          <button on:click={closeModal} class="modal-close" aria-label="Close">
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+        
+        <form on:submit|preventDefault={submitOrder} class="modal-form">
+          <div class="form-group">
+            <label class="form-label">Order Type</label>
+            <select bind:value={modalType} required class="form-select">
+              <option value="YES">YES</option>
+              <option value="NO">NO</option>
+            </select>
           </div>
-          <div style="margin-bottom: 1rem;">
-            <label>Price (0-1): <input type="number" min="0" max="1" step="0.01" bind:value={modalPrice} required /></label>
+          
+          <div class="form-group">
+            <label class="form-label">Price (0-1)</label>
+            <input type="number" min="0" max="1" step="0.01" bind:value={modalPrice} required class="form-input" />
           </div>
-          <div style="margin-bottom: 1rem;">
-            <label>Amount: <input type="number" min="1" step="1" bind:value={modalAmount} required /></label>
+          
+          <div class="form-group">
+            <label class="form-label">Amount</label>
+            <input type="number" min="1" step="1" bind:value={modalAmount} required class="form-input" />
           </div>
-          <div style="display: flex; gap: 1rem;">
-            <button type="submit">Confirm</button>
-            <button type="button" on:click={closeModal}>Cancel</button>
+          
+          <div class="modal-actions">
+            <button type="submit" class="confirm-button">Confirm Order</button>
+            <button type="button" on:click={closeModal} class="cancel-button-modal">Cancel</button>
           </div>
+          
           {#if modalError}
-            <p style="color: red; margin-top: 1rem;">{modalError}</p>
+            <div class="form-error">
+              <svg class="error-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+              <span>{modalError}</span>
+            </div>
           {/if}
         </form>
       </div>
     </div>
   {/if}
 
+  <!-- Sell Modal -->
   {#if showSellModal}
-    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 1000;">
-      <div style="background: white; padding: 2rem; border-radius: 8px; min-width: 320px; box-shadow: 0 2px 16px #0002;">
-        <h2>Sell Holdings</h2>
-        <form on:submit|preventDefault={submitSellOrder}>
-          <div style="margin-bottom: 1rem;">
-            <label>Type:
-              <select bind:value={sellType} required>
-                <option value="YES">YES</option>
-                <option value="NO">NO</option>
-              </select>
-            </label>
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Sell Holdings</h2>
+          <button on:click={closeSellModal} class="modal-close" aria-label="Close Sell Modal">
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+        
+        <form on:submit|preventDefault={submitSellOrder} class="modal-form">
+          <div class="form-group">
+            <label class="form-label">Share Type</label>
+            <select bind:value={sellType} required class="form-select">
+              <option value="YES">YES</option>
+              <option value="NO">NO</option>
+            </select>
           </div>
-          <div style="margin-bottom: 1rem;">
-            <label>Price (0-1): <input type="number" min="0" max="1" step="0.01" bind:value={sellPrice} required /></label>
+          
+          <div class="form-group">
+            <label class="form-label">Price (0-1)</label>
+            <input type="number" min="0" max="1" step="0.01" bind:value={sellPrice} required class="form-input" />
           </div>
-          <div style="margin-bottom: 1rem;">
-            <label>Amount: <input type="number" min="1" step="1" bind:value={sellAmount} required /></label>
+          
+          <div class="form-group">
+            <label class="form-label">Amount</label>
+            <input type="number" min="1" step="1" bind:value={sellAmount} required class="form-input" />
           </div>
-          <div style="display: flex; gap: 1rem;">
-            <button type="submit">Confirm</button>
-            <button type="button" on:click={closeSellModal}>Cancel</button>
+          
+          <div class="modal-actions">
+            <button type="submit" class="confirm-button">Confirm Sale</button>
+            <button type="button" on:click={closeSellModal} class="cancel-button-modal">Cancel</button>
           </div>
+          
           {#if sellError}
-            <p style="color: red; margin-top: 1rem;">{sellError}</p>
+            <div class="form-error">
+              <svg class="error-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+              <span>{sellError}</span>
+            </div>
           {/if}
         </form>
       </div>
     </div>
   {/if}
-{/if}
+</div>
+
+<style>
+  .orders-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+  }
+
+  /* Page Header */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .page-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0;
+    color: white;
+    background: linear-gradient(135deg, #fff 0%, #f0f9ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .market-status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    font-weight: 600;
+  }
+
+  .status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  .status-dot.active {
+    background: #10b981;
+  }
+
+  .status-dot.closed {
+    background: #ef4444;
+  }
+
+  .status-text {
+    color: white;
+    font-size: 0.95rem;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Loading State */
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+  }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(102, 126, 234, 0.3);
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .loading-text {
+    color: #4b5563;
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+
+  /* Error State */
+  .error-state {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #dc2626;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+  }
+
+  .error-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  .error-text {
+    font-weight: 500;
+    margin: 0;
+  }
+
+  /* Orders Grid */
+  .orders-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  /* Orders Section */
+  .orders-section {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 2rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .orders-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  }
+
+  .no-section::before {
+    background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+  }
+
+  .orders-badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .yes-badge {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  .no-badge {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+
+  /* Empty Orders */
+  .empty-orders {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    text-align: center;
+  }
+
+  .empty-icon {
+    width: 48px;
+    height: 48px;
+    color: #d1d5db;
+    margin-bottom: 1rem;
+    stroke-width: 1.5;
+  }
+
+  .empty-text {
+    color: #6b7280;
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  /* Orders Table */
+  .orders-table-container {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(229, 231, 235, 0.5);
+  }
+
+  .orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .orders-table th {
+    background: rgba(249, 250, 251, 0.8);
+    color: #374151;
+    font-weight: 600;
+    padding: 1rem 0.75rem;
+    text-align: left;
+    border-bottom: 2px solid rgba(229, 231, 235, 0.5);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .order-row {
+    transition: all 0.2s ease;
+  }
+
+  .order-row:hover {
+    background: rgba(249, 250, 251, 0.5);
+  }
+
+  .orders-table td {
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid rgba(229, 231, 235, 0.3);
+    color: #374151;
+  }
+
+  .price-cell {
+    font-weight: 600;
+    color: #059669;
+  }
+
+  .amount-cell {
+    font-weight: 500;
+  }
+
+  .user-cell {
+    color: #6b7280;
+    font-size: 0.8rem;
+  }
+
+  .date-cell {
+    color: #6b7280;
+    font-size: 0.8rem;
+  }
+
+  .action-cell {
+    text-align: center;
+  }
+
+  /* Action Buttons in Table */
+  .action-button {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .action-button svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .cancel-button {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+  }
+
+  .cancel-button:hover {
+    background: rgba(239, 68, 68, 0.2);
+    transform: scale(1.1);
+  }
+
+  .accept-button {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+  }
+
+  .accept-button:hover {
+    background: rgba(16, 185, 129, 0.2);
+    transform: scale(1.1);
+  }
+
+  .action-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Action Buttons Section */
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    justify-content: center;
+  }
+
+  .primary-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    padding: 0.875rem 1.5rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+
+  .primary-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+  }
+
+  .secondary-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.9);
+    color: #374151;
+    border: 1px solid rgba(209, 213, 219, 0.5);
+    padding: 0.875rem 1.5rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+  }
+
+  .secondary-button:hover:not(:disabled) {
+    background: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .button-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .primary-button:disabled,
+  .secondary-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Holdings Section */
+  .holdings-section {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .holdings-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 1.5rem 0;
+  }
+
+  .holdings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .holding-card {
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid rgba(229, 231, 235, 0.5);
+  }
+
+  .value-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: rgba(102, 126, 234, 0.3);
+  }
+
+  .yes-card {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border-color: rgba(16, 185, 129, 0.2);
+  }
+
+  .no-card {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border-color: rgba(239, 68, 68, 0.2);
+  }
+
+  .holding-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    opacity: 0.8;
+  }
+
+  .holding-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+  }
+
+  /* Sell Section */
+  .sell-section {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+  }
+
+  .sell-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: none;
+    padding: 0.875rem 1.5rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  }
+
+  .sell-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+  }
+
+  .sell-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-content {
+    background: white;
+    border-radius: 20px;
+    min-width: 400px;
+    max-width: 90vw;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    animation: modalAppear 0.3s ease;
+  }
+
+  @keyframes modalAppear {
+    from {
+      opacity: 0;
+      transform: scale(0.9) translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+    background: rgba(249, 250, 251, 0.5);
+  }
+
+  .modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+  }
+
+  .modal-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(107, 114, 128, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    color: #6b7280;
+  }
+
+  .modal-close:hover {
+    background: rgba(107, 114, 128, 0.2);
+    color: #374151;
+  }
+
+  .modal-close svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .modal-form {
+    padding: 2rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .form-input,
+  .form-select {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 2px solid rgba(209, 213, 219, 0.5);
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    background: rgba(249, 250, 251, 0.5);
+  }
+
+  .form-input:focus,
+  .form-select:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .confirm-button {
+    flex: 1;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.875rem 1.5rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .confirm-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+
+  .cancel-button-modal {
+    flex: 1;
+    background: rgba(107, 114, 128, 0.1);
+    color: #6b7280;
+    border: 2px solid rgba(209, 213, 219, 0.5);
+    padding: 0.875rem 1.5rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .cancel-button:hover {
+    background: rgba(107, 114, 128, 0.2);
+    color: #374151;
+  }
+
+  .form-error {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding: 0.875rem 1rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 8px;
+    color: #dc2626;
+    font-size: 0.875rem;
+  }
+
+  .form-error .error-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 1024px) {
+    .orders-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .orders-container {
+      padding: 1rem;
+    }
+
+    .page-header {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+    }
+
+    .page-title {
+      font-size: 2rem;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .holdings-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .modal-content {
+      min-width: auto;
+      margin: 1rem;
+    }
+
+    .modal-header,
+    .modal-form {
+      padding: 1rem 1.5rem;
+    }
+
+    .modal-actions {
+      flex-direction: column;
+    }
+
+    .orders-table-container {
+      font-size: 0.8rem;
+    }
+
+    .orders-table th,
+    .orders-table td {
+      padding: 0.75rem 0.5rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .orders-table th,
+    .orders-table td {
+      padding: 0.5rem 0.375rem;
+      font-size: 0.75rem;
+    }
+
+    .action-button {
+      width: 28px;
+      height: 28px;
+    }
+
+    .action-button svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+</style>
