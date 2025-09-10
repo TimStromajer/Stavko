@@ -18,6 +18,7 @@
     <nav class="navigation">
       <a href="/" class="nav-link">Domov</a>
       <a href="/leaderboard" class="nav-link">Lestvica</a>
+      <a href="/task" class="nav-link">Naloge</a>
       {#if $user === null}
         <a href="/login" class="nav-link auth-link">Prijava</a>
         <a href="/register" class="nav-link auth-button">Registracija</a>

@@ -29,12 +29,12 @@
 </script>
 
 <main class="leaderboard">
-  <h1 class="title">Leaderboard</h1>
+  <h1 class="title">Lestvica</h1>
 
   {#if loading}
     <div class="loading" role="status" aria-live="polite">
       <div class="spinner" aria-hidden="true"></div>
-      <p>Loading leaderboard...</p>
+      <p>Nalagam lestvico...</p>
     </div>
   {:else if error}
     <div class="error" role="alert">
@@ -46,8 +46,8 @@
         <thead>
           <tr>
             <th scope="col">Rank</th>
-            <th scope="col">Name</th>
-            <th scope="col">Value</th>
+            <th scope="col">Ime</th>
+            <th scope="col">Vrednost</th>
           </tr>
         </thead>
         <tbody>

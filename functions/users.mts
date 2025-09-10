@@ -1,6 +1,5 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, updateProfile  } from "firebase/auth";
-import { getFirestore, collection, getDocs, addDoc, query, where, doc, getDoc, QueryConstraint, setDoc } from "firebase/firestore";
 import { Context } from "@netlify/functions";
 import admin from "firebase-admin";
 
