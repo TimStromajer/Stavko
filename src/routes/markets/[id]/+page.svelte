@@ -33,9 +33,21 @@
 
   let marketStatus = $state('OPEN');
 
+  // graph
+  let chartContainer = $state();
+  //let points = $state('');
+  let ordersData = $state([]);
+  let width = $state(800);
+  let height = $state(300);
+  let padding = $state(40);
+  let minDate = $state(0);
+  let maxDate = $state(0);
+  let yTicks = Array.from({ length: 11 }, (_, i) => i * 0.1);
+  let xTicks = $state([]);
+
   function toDate(val: FirestoreTimestamp): Date {
-    if (typeof val === 'object' && 'seconds' in val) {
-      return new Date(val.seconds * 1000 + Math.floor(val.nanoseconds / 1e6));
+    if (typeof val === 'object' && '_seconds' in val) {
+      return new Date(val._seconds * 1000 + Math.floor(val._nanoseconds / 1e6));
     }
     return new Date();
   }
@@ -71,10 +83,100 @@
       await getOrders();
       await fetchHoldings();
       await getUserValue();
+      await createGraph();
+      
+      // Set up dimensions after graph is created
+      updateDimensions();
       loading = false;
     });
-    return () => unsubscribe();
+
+    // Set up resize listener
+    const resizeHandler = () => updateDimensions();
+    window.addEventListener('resize', resizeHandler);
+    
+    return () => {
+      unsubscribe();
+      window.removeEventListener('resize', resizeHandler);
+    };
   });
+
+  $effect(() => {
+    if (chartContainer) {
+      updateDimensions();
+    }
+  });
+
+  async function createGraph() {
+    const data = await ordersGraphData();
+    ordersData = data;
+    
+    if (data.length > 0) {
+      minDate = Math.min(...data.map(d => d.date));
+      maxDate = Math.max(...data.map(d => d.date));
+      
+      if (minDate && maxDate && minDate !== maxDate) {
+        let step = (maxDate - minDate) / 4; // 4 intervals = 5 ticks
+        xTicks = Array.from({ length: 5 }, (_, i) => minDate + i * step);
+        if (xTicks[xTicks.length - 1] !== maxDate) {
+          xTicks.push(maxDate); // ensure last date included
+        }
+      } else {
+        xTicks = [minDate]; // fallback for single data point
+      }
+    } else {
+      minDate = 0;
+      maxDate = 0;
+      xTicks = [];
+    }
+  }
+
+  const updateDimensions = () => {
+    if (chartContainer) {
+      const containerWidth = chartContainer.offsetWidth;
+      width = Math.max(300, containerWidth); // 32px for padding
+      height = Math.max(200, width * 0.4); // Maintain aspect ratio
+      padding = width < 500 ? 30 : 40; // Smaller padding on mobile
+    }
+  };
+
+  function formatDate(d) {
+    return new Date(d).getDate() + '.' + (new Date(d).getMonth() + 1);
+  }
+
+  let scaleDate = $derived((date) => {
+    if (!minDate || !maxDate || minDate === maxDate) return padding;
+    return padding + ((date - minDate) / (maxDate - minDate)) * (width - 2 * padding);
+  });
+
+  let scalePrice = $derived((price) => {
+    return height - padding - price * (height - 2 * padding);
+  });
+
+  let points = $derived(() => {
+    if (!ordersData.length) return '';
+    return ordersData.map(d => `${scaleDate(d.date)},${scalePrice(d.price)}`).join(" ");
+  });
+
+  async function ordersGraphData() {
+    const previousOrders = await getPreviousOrders();
+    const data = previousOrders.map(o => ({
+      date: toDate(o.lastChangeDate),
+      price: o.action === 'BUY' ? (o.type === 'YES' ? 1 - o.price : o.price) : (o.type === 'YES' ? o.price : 1 - o.price)
+    }));
+    return data;
+  }
+
+  async function getPreviousOrders() {
+    try {
+      const marketId = get(page).params.id;
+      const res = await fetch(PUBLIC_FUNCTIONS_URL + `orders?marketId=${marketId}&status=ACCEPTED`);
+      if (!res.ok) throw new Error('Failed to fetch previous orders');
+      const orders: Order[] = await res.json();
+      return orders;
+    } catch (e) {
+      return [];
+    }
+  }
 
   async function getOrders() {
     try {
@@ -434,6 +536,101 @@
           </svg>
           Confirm Market
         </button>
+      </div>
+
+      <!-- Price Chart Section -->
+      <div class="chart-section">
+        <h3 class="chart-title">Price History</h3>
+        <div class="chart-container" bind:this={chartContainer}>
+          <svg {width} {height} class="price-chart">
+            <!-- X axis -->
+            <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#374151"/>
+
+            <!-- Y axis -->
+            <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#374151"/>
+
+            <!-- Y axis ticks, labels, and grid lines -->
+            {#each yTicks as t}
+              <line
+                x1={padding - 5}
+                y1={scalePrice(t)}
+                x2={padding}
+                y2={scalePrice(t)}
+                stroke="#374151"
+              />
+              <text
+                x={padding - 10}
+                y={scalePrice(t) + 4}
+                font-size="11"
+                text-anchor="end"
+                fill="#ffffff"
+                font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif"
+              >
+                {t.toFixed(1)}
+              </text>
+              <line
+                x1={padding}
+                y1={scalePrice(t)}
+                x2={width - padding}
+                y2={scalePrice(t)}
+                stroke="#e5e7eb"
+                stroke-dasharray="3,3"
+                stroke-width="0.5"
+              />
+            {/each}
+
+            <!-- X axis ticks, labels, and grid lines -->
+            {#each xTicks as d}
+              <line
+                x1={scaleDate(d)}
+                y1={height - padding}
+                x2={scaleDate(d)}
+                y2={height - padding + 5}
+                stroke="#374151"
+              />
+              <text
+                x={scaleDate(d)}
+                y={height - padding + 18}
+                font-size="11"
+                text-anchor="middle"
+                fill="#ffffff"
+                font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif"
+              >
+                {formatDate(d)}
+              </text>
+              <line
+                x1={scaleDate(d)}
+                y1={padding}
+                x2={scaleDate(d)}
+                y2={height - padding}
+                stroke="#e5e7eb"
+                stroke-dasharray="3,3"
+                stroke-width="0.5"
+              />
+            {/each}
+
+            <!-- Line with gradient -->
+            <defs>
+              <linearGradient id="priceGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.7" />
+                <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.7" />
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge> 
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <polyline fill="none" stroke="url(#priceGradient)" stroke-width="3" points={points()} filter="url(#glow)" />
+
+            <!-- Data points -->
+            {#each ordersData as d}
+              <circle cx={scaleDate(d.date)} cy={scalePrice(d.price)} r="1" fill="#667eea" stroke="white" stroke-width="3" class="data-point" />
+            {/each}
+          </svg>
+        </div>
       </div>
 
       <!-- Holdings Section -->
@@ -1294,5 +1491,12 @@
       width: 14px;
       height: 14px;
     }
+  }
+
+  .chart-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: white;
+    margin: 0;
   }
 </style>

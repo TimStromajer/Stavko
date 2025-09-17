@@ -40,8 +40,8 @@
   <!-- Header Section -->
   <div class="header-section">
     <div class="title-group">
-      <h1 class="page-title">Markets</h1>
-      <p class="page-subtitle">Explore and participate in prediction markets</p>
+      <h1 class="page-title">Trgi</h1>
+      <p class="page-subtitle">Raziščite in sodelujte na trgih napovedi</p>
     </div>
     <button 
       on:click={() => window.location.href = '/markets/new'} 
@@ -50,14 +50,14 @@
       <svg class="button-icon" viewBox="0 0 20 20" fill="currentColor">
         <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
       </svg>
-      Create Market
+      Ustvari trg
     </button>
   </div>
 
   {#if loading}
     <div class="loading-state">
       <div class="loading-spinner"></div>
-      <p class="loading-text">Loading markets...</p>
+      <p class="loading-text">Nalagam trge...</p>
     </div>
   {:else if error}
     <div class="error-state">
@@ -70,10 +70,10 @@
     <!-- Active Markets Section -->
     <section class="markets-section">
       <div class="section-header">
-        <h2 class="section-title">Active Markets</h2>
+        <h2 class="section-title">Aktivni trgi</h2>
         <div class="status-badge active">
           <div class="status-dot"></div>
-          Live
+          v živo
         </div>
       </div>
       
@@ -83,8 +83,8 @@
             <circle cx="12" cy="12" r="10"/>
             <path d="M12 6v6l4 2"/>
           </svg>
-          <h3 class="empty-title">No Active Markets</h3>
-          <p class="empty-description">There are no active markets at the moment. Check back later or create a new one.</p>
+          <h3 class="empty-title">Ni aktivnih trgov</h3>
+          <p class="empty-description">Trenutno ni nobenih aktivnih trgov. Poizkusite še enkrat pozneje ali pa ustvarite nov trg.</p>
         </div>
       {:else}
         <div class="markets-grid">

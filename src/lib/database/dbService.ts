@@ -11,5 +11,5 @@ export async function fetchMarkets(): Promise<Market[]> {
 } 
 
 export async function serverFetch(url: string): Promise<any> {
-  return fetch(`${PUBLIC_FUNCTIONS_URL}/${url}`);
+  return fetch(`${PUBLIC_FUNCTIONS_URL}${url}`);
 }
