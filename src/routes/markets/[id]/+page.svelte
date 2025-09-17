@@ -5,7 +5,7 @@
   import type { FirestoreTimestamp } from '$lib/classes/FireStoreTimestamp';
   import type { Order } from '$lib/classes/Order';
   import { auth } from "$lib/firebase";
-  import { user } from "$lib/stores/user";
+  import { user, userLoading } from "$lib/stores/user";
   import { goto } from '$app/navigation';
   import { PUBLIC_FUNCTIONS_URL } from "$env/static/public";
 
@@ -76,27 +76,44 @@
   }
 
   onMount(() => {
-    let unsubscribe = user.subscribe(async (u) => {
-      loading = true;
-      error = '';
-      if (u && u.uid) loginUserId = u.uid;
-      await getOrders();
-      await fetchHoldings();
-      await getUserValue();
-      await createGraph();
-      
-      // Set up dimensions after graph is created
-      updateDimensions();
-      loading = false;
+    let unsubscribeUser: () => void;
+    let unsubscribeLoading: () => void;
+
+    unsubscribeLoading = userLoading.subscribe((loadingAuth) => {
+      if (loadingAuth) {
+        // Still waiting for Firebase to resolve initial auth state
+        return;
+      }
+
+      // Once auth is done loading, then listen for user changes
+      unsubscribeUser = user.subscribe(async (u) => {
+        console.log("User changed:", u);
+        loading = true;
+        error = "";
+
+        if (u && u.uid) {
+          loginUserId = u.uid;
+        } else {
+          // signed out case — clear/reset data here if needed
+          loginUserId = null;
+        }
+        await getOrders();
+        await fetchHoldings();
+        await getUserValue();
+        await createGraph();
+        updateDimensions();
+
+        loading = false;
+      });
     });
 
-    // Set up resize listener
     const resizeHandler = () => updateDimensions();
-    window.addEventListener('resize', resizeHandler);
-    
+    window.addEventListener("resize", resizeHandler);
+
     return () => {
-      unsubscribe();
-      window.removeEventListener('resize', resizeHandler);
+      if (unsubscribeUser) unsubscribeUser();
+      if (unsubscribeLoading) unsubscribeLoading();
+      window.removeEventListener("resize", resizeHandler);
     };
   });
 
@@ -537,7 +554,8 @@
           Confirm Market
         </button>
       </div>
-
+    {/if}
+  
       <!-- Price Chart Section -->
       <div class="chart-section">
         <h3 class="chart-title">Price History</h3>
@@ -634,6 +652,7 @@
       </div>
 
       <!-- Holdings Section -->
+      {#if loginUserId}
       <div class="holdings-section">
         <h3 class="holdings-title">Your Holdings</h3>
         <div class="holdings-grid">

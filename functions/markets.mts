@@ -35,12 +35,12 @@ export const handler = async (event: any, context: Context) => {
       //   };
       // }
       
-      const { orderId, title, status } = event.queryStringParameters || {};
+      const { orderId, title, status, marketId } = event.queryStringParameters || {};
       
       let docs;
-      if (orderId) {
+      if (marketId) {
         // Query Firestore for users with the given userId
-        const snapshot = await db.collection("Markets").doc(orderId).get();
+        const snapshot = await db.collection("Markets").doc(marketId).get();
 
         docs = snapshot.exists
           ? [{ id: snapshot.id, ...snapshot.data() }]
