@@ -179,7 +179,7 @@
     const data = previousOrders.map(o => ({
       date: toDate(o.lastChangeDate),
       price: o.action === 'BUY' ? (o.type === 'YES' ? 1 - o.price : o.price) : (o.type === 'YES' ? o.price : 1 - o.price)
-    }));
+    })).sort((a, b) => a.date - b.date);
     return data;
   }
 
